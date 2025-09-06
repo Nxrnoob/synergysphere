@@ -19,10 +19,11 @@ SynergySphere is a modern, mobile-first, responsive team collaboration platform.
 
 ## Screenshots
 
-![demo](assets/demo.png)
+![demo](assets/demo.jpg)
 
-![demo2](assets/demo2.png)
-(Steps to get this running in your machine
+![demo2](assets/demo2.jpg)
+
+## Steps to get this running in your machine
 ---
 
 1) Clone the repo
