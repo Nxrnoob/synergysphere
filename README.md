@@ -19,9 +19,9 @@ SynergySphere is a modern, mobile-first, responsive team collaboration platform.
 
 ## Screenshots
 
-![demo](assets/demo.jpg)
+![demo](demo.jpg)
 
-![demo2](assets/demo2.jpg)
+![demo2](demo2.jpg)
 
 ## Steps to get this running in your machine
 ---
