@@ -1,0 +1,43 @@
+# dependencies
+node_modules/
+*/node_modules/
+
+# Next.js build outputs
+.next/
+out/
+
+# production build outputs
+build/
+dist/
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files
+.env*
+!.env.example  # keep sample env file if you want to share example config
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+# keep next-env.d.ts in git (recommended by Next.js)
+# next-env.d.ts
+
+# misc system files
+.DS_Store
+
+# AI tool configs (ignore local-only rules)
+.clinerules/byterover-rules.md
+.kilocode/rules/byterover-rules.md
+.roo/rules/byterover-rules.md
+.windsurf/rules/byterover-rules.md
+.cursor/rules/byterover-rules.mdc
+.kiro/steering/byterover-rules.md
+.qoder/rules/byterover-rules.md
+.augment/rules/byterover-rules.md
+
