@@ -1,6 +1,15 @@
 
 ## SynergySphere – Team Collaboration Platform (MVP)
 
+Team Leader Name
+	Subash GS
+Email
+	gssubash2.0@gmail.com
+Team Member 1 Name
+	Sakthivel R
+Email
+	sakthivelr1679@gmail.com
+
 SynergySphere is a modern, mobile-first, responsive team collaboration platform. It helps teams stay organized, communicate effectively, manage tasks and projects, and receive notifications — all in a single intelligent platform.
 
 ## Features
