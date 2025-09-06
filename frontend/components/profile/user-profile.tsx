@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,66 +9,121 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowLeft, User, Bell, Shield, LogOut } from "lucide-react"
 import Link from "next/link"
+import { toast } from "sonner"
+import { authAPI } from "@/lib/api"
 
-// Mock user data
-const mockUser = {
-  id: 1,
-  name: "John Doe",
-  email: "john.doe@company.com",
-  initials: "JD",
-  avatar: "/diverse-user-avatars.png",
-  joinedDate: "January 2024",
-  settings: {
+interface User {
+  _id: string
+  name: string
+  email: string
+  profileImage?: string
+  createdAt: string
+}
+
+export function UserProfile() {
+  const [user, setUser] = useState<User | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedName, setEditedName] = useState("")
+  const [editedEmail, setEditedEmail] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+  const [settings, setSettings] = useState({
     emailNotifications: true,
     pushNotifications: false,
     taskReminders: true,
     weeklyDigest: true,
-  },
-}
+  })
 
-export function UserProfile() {
-  const [user, setUser] = useState(mockUser)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedName, setEditedName] = useState(user.name)
-  const [editedEmail, setEditedEmail] = useState(user.email)
-  const [isLoading, setIsLoading] = useState(false)
+  useEffect(() => {
+    fetchUserProfile()
+  }, [])
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await authAPI.getCurrentUser()
+      if (response.success) {
+        setUser(response.data)
+        setEditedName(response.data.name)
+        setEditedEmail(response.data.email)
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to fetch user profile")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleSaveProfile = async () => {
+    if (!user) return
+    
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const response = await authAPI.updateProfile({
+        name: editedName,
+        email: editedEmail
+      })
 
-    setUser({
-      ...user,
-      name: editedName,
-      email: editedEmail,
-    })
-
-    setIsEditing(false)
-    setIsLoading(false)
+      if (response.success) {
+        setUser(response.data)
+        toast.success("Profile updated successfully!")
+        setIsEditing(false)
+      } else {
+        toast.error(response.message || "Failed to update profile")
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleCancelEdit = () => {
-    setEditedName(user.name)
-    setEditedEmail(user.email)
+    if (user) {
+      setEditedName(user.name)
+      setEditedEmail(user.email)
+    }
     setIsEditing(false)
   }
 
-  const handleSettingChange = (setting: keyof typeof user.settings, value: boolean) => {
-    setUser({
-      ...user,
-      settings: {
-        ...user.settings,
-        [setting]: value,
-      },
+  const handleSettingChange = (setting: keyof typeof settings, value: boolean) => {
+    setSettings({
+      ...settings,
+      [setting]: value,
     })
   }
 
   const handleLogout = () => {
-    // In a real app, this would clear auth tokens and redirect
+    authAPI.logout()
     window.location.href = "/"
   }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">Failed to load user profile</p>
+          <Button onClick={handleLogout} className="mt-4">Sign Out</Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Format join date
+  const joinDate = new Date(user.createdAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long'
+  })
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,8 +157,10 @@ export function UserProfile() {
               {/* Avatar Section */}
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={user.avatar || "/placeholder.svg"} />
-                  <AvatarFallback className="text-lg">{user.initials}</AvatarFallback>
+                  <AvatarImage src={user.profileImage || "/placeholder.svg"} />
+                  <AvatarFallback className="text-lg">
+                    {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-sm text-muted-foreground">Profile Picture</p>
@@ -151,7 +208,7 @@ export function UserProfile() {
                 <div className="space-y-2">
                   <Label>Member Since</Label>
                   <div className="p-3 rounded-2xl border border-border bg-muted/30">
-                    <span className="text-foreground">{user.joinedDate}</span>
+                    <span className="text-foreground">{joinDate}</span>
                   </div>
                 </div>
 
@@ -203,7 +260,7 @@ export function UserProfile() {
                   <p className="text-xs text-muted-foreground">Receive email updates about project activities</p>
                 </div>
                 <Switch
-                  checked={user.settings.emailNotifications}
+                  checked={settings.emailNotifications}
                   onCheckedChange={(checked) => handleSettingChange("emailNotifications", checked)}
                 />
               </div>
@@ -214,7 +271,7 @@ export function UserProfile() {
                   <p className="text-xs text-muted-foreground">Get instant notifications in your browser</p>
                 </div>
                 <Switch
-                  checked={user.settings.pushNotifications}
+                  checked={settings.pushNotifications}
                   onCheckedChange={(checked) => handleSettingChange("pushNotifications", checked)}
                 />
               </div>
@@ -225,7 +282,7 @@ export function UserProfile() {
                   <p className="text-xs text-muted-foreground">Remind me about upcoming task deadlines</p>
                 </div>
                 <Switch
-                  checked={user.settings.taskReminders}
+                  checked={settings.taskReminders}
                   onCheckedChange={(checked) => handleSettingChange("taskReminders", checked)}
                 />
               </div>
@@ -236,7 +293,7 @@ export function UserProfile() {
                   <p className="text-xs text-muted-foreground">Get a weekly summary of your project progress</p>
                 </div>
                 <Switch
-                  checked={user.settings.weeklyDigest}
+                  checked={settings.weeklyDigest}
                   onCheckedChange={(checked) => handleSettingChange("weeklyDigest", checked)}
                 />
               </div>

@@ -10,20 +10,23 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { toast } from "sonner"
+import { tasksAPI } from "@/lib/api"
 
 interface TaskCreationModalProps {
   isOpen: boolean
   onClose: () => void
-  onTaskCreated?: (title: string, assignee: string) => void
+  onTaskCreated?: (task: any) => void
   projectMembers: Array<{
-    id: number
+    id: string
     name: string
     initials: string
     avatar: string
   }>
+  projectId: string
 }
 
-export function TaskCreationModal({ isOpen, onClose, onTaskCreated, projectMembers }: TaskCreationModalProps) {
+export function TaskCreationModal({ isOpen, onClose, onTaskCreated, projectMembers, projectId }: TaskCreationModalProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [assignee, setAssignee] = useState("")
@@ -33,22 +36,41 @@ export function TaskCreationModal({ isOpen, onClose, onTaskCreated, projectMembe
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!title.trim()) return
+    
     setIsLoading(true)
 
-    // Simulate task creation
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const taskData = {
+        projectId,
+        title,
+        description,
+        assignee: assignee || undefined,
+        dueDate: dueDate || undefined,
+        status: "To-Do"
+      }
 
-    const assigneeName = projectMembers.find((m) => m.id.toString() === assignee)?.name || "Unassigned"
-    onTaskCreated?.(title, assigneeName)
+      const response = await tasksAPI.create(taskData)
 
-    // Reset form
-    setTitle("")
-    setDescription("")
-    setAssignee("")
-    setDueDate("")
-    setPriority("medium")
-    setIsLoading(false)
-    onClose()
+      if (response.success) {
+        toast.success("Task created successfully!")
+        onTaskCreated?.(response.data)
+        
+        // Reset form
+        setTitle("")
+        setDescription("")
+        setAssignee("")
+        setDueDate("")
+        setPriority("medium")
+        onClose()
+      } else {
+        toast.error(response.message || "Failed to create task")
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create task")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleClose = () => {
@@ -102,7 +124,7 @@ export function TaskCreationModal({ isOpen, onClose, onTaskCreated, projectMembe
                 </SelectTrigger>
                 <SelectContent>
                   {projectMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id.toString()}>
+                    <SelectItem key={member.id} value={member.id}>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={member.avatar || "/placeholder.svg"} />

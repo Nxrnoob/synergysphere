@@ -1,61 +1,73 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import { notificationsAPI } from "@/lib/api"
 
-// Mock notifications data
-const mockNotifications = [
-  {
-    id: 1,
-    type: "task_assigned",
-    title: "New task assigned",
-    description: "You've been assigned to 'Update homepage design'",
-    timestamp: new Date(Date.now() - 10 * 60 * 1000),
-    read: false,
-    avatar: "/diverse-user-avatars.png",
-    initials: "JS",
-  },
-  {
-    id: 2,
-    type: "project_created",
-    title: "Project created",
-    description: "Mobile App Development project has been created",
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    read: false,
-    avatar: "/diverse-user-avatars.png",
-    initials: "MJ",
-  },
-  {
-    id: 3,
-    type: "message",
-    title: "New message",
-    description: "Sarah Wilson commented on Website Redesign",
-    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-    read: true,
-    avatar: "/diverse-user-avatars.png",
-    initials: "SW",
-  },
-]
+interface Notification {
+  _id: string
+  type: "task_created" | "task_completed" | "project_update" | "task_assigned"
+  message: string
+  isRead: boolean
+  createdAt: string
+}
 
 export function NotificationsDropdown() {
   const [isOpen, setIsOpen] = useState(false)
-  const [notifications, setNotifications] = useState(mockNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications()
+    }
+  }, [isOpen])
 
-  const markAsRead = (id: number) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  const fetchNotifications = async () => {
+    try {
+      const response = await notificationsAPI.getUnread()
+      if (response.success) {
+        setNotifications(response.data)
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to fetch notifications")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  const unreadCount = notifications.filter((n) => !n.isRead).length
+
+  const markAsRead = async (id: string) => {
+    try {
+      const response = await notificationsAPI.markAsRead(id)
+      if (response.success) {
+        setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)))
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to mark notification as read")
+    }
   }
 
-  const formatTime = (date: Date) => {
+  const markAllAsRead = async () => {
+    try {
+      const response = await notificationsAPI.markAllAsRead()
+      if (response.success) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+        toast.success("All notifications marked as read")
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to mark all notifications as read")
+    }
+  }
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -89,32 +101,38 @@ export function NotificationsDropdown() {
               </div>
 
               <div className="max-h-80 overflow-y-auto">
-                {notifications.length === 0 ? (
+                {loading ? (
+                  <div className="p-4 text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                  </div>
+                ) : notifications.length === 0 ? (
                   <div className="p-4 text-center text-muted-foreground">No notifications yet</div>
                 ) : (
                   notifications.map((notification) => (
                     <div
-                      key={notification.id}
+                      key={notification._id}
                       className={cn(
                         "p-4 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer",
-                        !notification.read && "bg-blue-50/50",
+                        !notification.isRead && "bg-blue-50/50",
                       )}
-                      onClick={() => markAsRead(notification.id)}
+                      onClick={() => markAsRead(notification._id)}
                     >
                       <div className="flex gap-3">
                         <Avatar className="h-8 w-8 flex-shrink-0">
-                          <AvatarImage src={notification.avatar || "/placeholder.svg"} />
-                          <AvatarFallback className="text-xs">{notification.initials}</AvatarFallback>
+                          <AvatarImage src="/placeholder.svg" />
+                          <AvatarFallback className="text-xs">N</AvatarFallback>
                         </Avatar>
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-foreground">{notification.title}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{notification.description}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{formatTime(notification.timestamp)}</p>
+                              <p className="text-sm font-medium text-foreground">
+                                {notification.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{formatTime(notification.createdAt)}</p>
                             </div>
-                            {!notification.read && (
+                            {!notification.isRead && (
                               <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1" />
                             )}
                           </div>

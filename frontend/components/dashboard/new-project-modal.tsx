@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { toast } from "sonner"
+import { projectsAPI } from "@/lib/api"
 
 interface NewProjectModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreateProject: (name: string, description: string) => void
+  onCreateProject: (project: any) => void
 }
 
 export function NewProjectModal({ isOpen, onClose, onCreateProject }: NewProjectModalProps) {
@@ -26,14 +28,26 @@ export function NewProjectModal({ isOpen, onClose, onCreateProject }: NewProject
 
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const response = await projectsAPI.create({
+        name: projectName,
+        description: projectDescription
+      })
 
-    onCreateProject(projectName, projectDescription)
-    setProjectName("")
-    setProjectDescription("")
-    setIsLoading(false)
-    onClose()
+      if (response.success) {
+        toast.success("Project created successfully!")
+        onCreateProject(response.data)
+        setProjectName("")
+        setProjectDescription("")
+        onClose()
+      } else {
+        toast.error(response.message || "Failed to create project")
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create project")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

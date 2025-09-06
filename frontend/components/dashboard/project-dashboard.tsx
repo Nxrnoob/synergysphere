@@ -1,81 +1,113 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Plus, Search, Settings } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { ToastContainer } from "@/components/ui/toast"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { NewProjectModal } from "./new-project-modal"
 import { NotificationsDropdown } from "./notifications-dropdown"
 import Link from "next/link"
+import { projectsAPI, authAPI } from "@/lib/api"
 
-// Mock data for projects
-const mockProjects = [
-  {
-    id: 1,
-    name: "Website Redesign",
-    description: "Complete overhaul of company website",
-    tasksCompleted: 12,
-    totalTasks: 18,
-    progress: 67,
-    members: 4,
-    dueDate: "2024-01-15",
-  },
-  {
-    id: 2,
-    name: "Mobile App Development",
-    description: "iOS and Android app for customer portal",
-    tasksCompleted: 8,
-    totalTasks: 24,
-    progress: 33,
-    members: 6,
-    dueDate: "2024-02-28",
-  },
-  {
-    id: 3,
-    name: "Marketing Campaign",
-    description: "Q1 product launch campaign",
-    tasksCompleted: 15,
-    totalTasks: 15,
-    progress: 100,
-    members: 3,
-    dueDate: "2024-01-10",
-  },
-  {
-    id: 4,
-    name: "Database Migration",
-    description: "Migrate legacy systems to cloud",
-    tasksCompleted: 3,
-    totalTasks: 12,
-    progress: 25,
-    members: 2,
-    dueDate: "2024-03-15",
-  },
-]
+interface Project {
+  _id: string
+  name: string
+  description: string
+  tasksCompleted: number
+  totalTasks: number
+  progress: number
+  members: number
+  dueDate: string
+  createdAt: string
+}
 
 export function ProjectDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
-  const { toasts, toast, removeToast } = useToast()
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
 
-  const filteredProjects = mockProjects.filter(
+  useEffect(() => {
+    fetchProjects()
+    fetchCurrentUser()
+  }, [])
+
+  const fetchProjects = async () => {
+    try {
+      const response = await projectsAPI.getAll()
+      if (response.success) {
+        // Transform the data to match the expected format
+        const transformedProjects = response.data.map((project: any) => ({
+          _id: project._id,
+          name: project.name,
+          description: project.description,
+          tasksCompleted: 0, // We'll need to fetch this separately
+          totalTasks: 0, // We'll need to fetch this separately
+          progress: 0, // We'll calculate this based on tasks
+          members: project.members?.length || 1,
+          dueDate: project.createdAt, // Using createdAt as dueDate for now
+          createdAt: project.createdAt
+        }))
+        setProjects(transformedProjects)
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to fetch projects")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await authAPI.getCurrentUser()
+      if (response.success) {
+        setUser(response.data)
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to fetch user data")
+    }
+  }
+
+  const filteredProjects = projects.filter(
     (project) =>
       project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.description.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  const handleCreateProject = (name: string, description: string) => {
-    toast.success("Project created successfully", `${name} has been added to your workspace`)
+  const handleCreateProject = (project: any) => {
+    // Add the new project to the list
+    setProjects(prev => [...prev, {
+      _id: project._id,
+      name: project.name,
+      description: project.description,
+      tasksCompleted: 0,
+      totalTasks: 0,
+      progress: 0,
+      members: project.members?.length || 1,
+      dueDate: project.createdAt,
+      createdAt: project.createdAt
+    }])
+    toast.success("Project created successfully!")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading your projects...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <ToastContainer toasts={toasts} onClose={removeToast} />
-
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between px-4">
@@ -95,8 +127,8 @@ export function ProjectDashboard() {
             </Link>
             <Link href="/profile">
               <Avatar className="h-8 w-8 cursor-pointer">
-                <AvatarImage src="/diverse-user-avatars.png" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarImage src={user?.profileImage || "/diverse-user-avatars.png"} />
+                <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
               </Avatar>
             </Link>
           </div>
@@ -107,7 +139,9 @@ export function ProjectDashboard() {
       <main className="container px-4 py-6">
         {/* Welcome Section */}
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-foreground mb-2">Welcome back, John!</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-2">
+            Welcome back, {user?.name || "User"}!
+          </h2>
           <p className="text-muted-foreground">Here's what's happening with your projects today.</p>
         </div>
 
@@ -125,7 +159,7 @@ export function ProjectDashboard() {
         {/* Projects Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((project) => (
-            <Link key={project.id} href={`/project/${project.id}`}>
+            <Link key={project._id} href={`/project/${project._id}`}>
               <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border-0 shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">

@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
+import { toast } from "sonner"
+import { authAPI } from "@/lib/api"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -18,13 +20,24 @@ export function LoginForm() {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate login process
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const response = await authAPI.login({
+        email,
+        password
+      })
 
-    // For MVP, redirect to dashboard
-    window.location.href = "/dashboard"
-
-    setIsLoading(false)
+      if (response.success) {
+        toast.success("Login successful!")
+        // Redirect to dashboard
+        window.location.href = "/dashboard"
+      } else {
+        toast.error(response.message || "Login failed")
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Login failed")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
