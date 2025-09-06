@@ -1,170 +1,133 @@
-SynergySphere – Team Collaboration Platform (MVP)
+
+## SynergySphere – Team Collaboration Platform (MVP)
 
 SynergySphere is a modern, mobile-first, responsive team collaboration platform. It helps teams stay organized, communicate effectively, manage tasks and projects, and receive notifications — all in a single intelligent platform.
 
-This repository contains both the frontend and backend for SynergySphere.
+## Features
 
-🚀 Features
+- User authentication (signup/login/logout)
 
-User authentication (signup/login/logout)
+- Project creation & management
 
-Project creation & management
+- Task assignment with due dates and statuses (To-Do / In Progress / Done)
 
-Task assignment with due dates and statuses (To-Do / In Progress / Done)
+- Project-specific threaded discussions
 
-Project-specific threaded discussions
+- Notifications for important updates
 
-Notifications for important updates
+- Mobile  responsive design
 
-Mobile-first responsive design with desktop support
+## Screenshots
 
-🔹 Frontend
-Technologies Used
+![demo](assets/demo.png)
 
-Next.js (React framework)
+![demo2](assets/demo2.png)
+(Steps to get this running in your machine
+---
 
-TypeScript
+1) Clone the repo
 
-Tailwind CSS / Sonner for notifications
+`git clone https://github.com/your-username/synergysphere.git`
+`cd synergysphere`
 
-Getting Started
-Prerequisites
 
-Node.js v14 or higher
+---
 
-pnpm package manager
+2) Install dependencies (both projects) — single command
 
-Installation
+This installs frontend and backend deps in one go:
 
-cd frontend
-pnpm install
+`( cd frontend && npm install ) && ( cd backend && npm install )`
 
-Environment Variables
 
-Create a .env file in frontend/:
-NEXT_PUBLIC_API_URL=http://localhost:5001/api
+> If you use pnpm or yarn, replace npm install with pnpm install or yarn. and run those commands seperately if you are using windows 
 
-Running the Application
-# Make sure backend is running
-pnpm dev
 
-Open your browser at http://localhost:3000
+---
 
-Features
+3) Environment files
 
-Connects to backend API via lib/api.ts
+Copy the example env files and edit values as needed.
 
-Handles authentication, projects, tasks, discussions, and notifications
+Frontend (frontend/.env.example)
 
-Uses toast notifications to display success/error messages
+# Frontend environment (Next.js)
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_ENV=development
 
-🔹 Backend
-Technologies Used
+Create the real file:
 
-Node.js & Express.js
+cp frontend/.env.example frontend/.env
+# then edit frontend/.env if needed
 
-MongoDB with Mongoose
+Backend (backend/.env.example)
 
-JWT authentication
-
-Bcrypt for password hashing
-
-Getting Started
-Prerequisites
-
-Node.js v14 or higher
-
-MongoDB (local or cloud instance)
-
-Installation
-
-cd backend
-npm install
-
-Environment Variables
-
-Create .env in backend/:
-
+# Backend environment
+PORT=5000
+DATABASE_URL=mongodb://localhost:27017/synergysphere
+JWT_SECRET=replace_this_with_a_strong_secret
 NODE_ENV=development
-PORT=5001
-MONGODB_URI=mongodb://admin:password@localhost:27017/synergysphere?authSource=admin
-JWT_SECRET=your_jwt_secret_key_here_change_it_in_production
-JWT_EXPIRE=7d
 
-Running the Application
+Create the real file:
 
-# Development
-npm run dev
+cp backend/.env.example backend/.env
+# then edit backend/.env with real DB URI and JWT secret
 
-# Production
-npm start
 
-Seeding Data
+---
 
-# Seed sample data
-npm run seed
+4) Run locally (separately)
 
-# Delete all data
-npm run seed -d
+Open two terminals (one for backend, one for frontend).
 
-API Endpoints
+Start backend
 
-Authentication
+`cd backend`
+`npm run dev`
 
-POST /api/auth/signup – Register a new user
+Start frontend
 
-POST /api/auth/login – Login
+`cd frontend`
+`npm run dev`
+# then open http://localhost:3000
 
-Projects
+Default ports
 
-GET /api/projects – Get all projects for logged in user
+Frontend (Next.js): http://localhost:3000
 
-POST /api/projects – Create a new project
+Backend (API): http://localhost:5001
 
-PUT /api/projects/:id – Update project
 
-DELETE /api/projects/:id – Delete project
+Make sure the frontend NEXT_PUBLIC_API_URL points to your backend URL.
 
-PUT /api/projects/:id/members – Add member
 
-Tasks
+---
 
-GET /api/tasks?projectId=ID – Get project tasks
+5) Run both at once (one-liner from project root)
 
-POST /api/tasks – Create a task
+`npx concurrently "cd backend && npm run dev" "cd frontend && npm run dev"`
 
-PUT /api/tasks/:id – Update task
 
-DELETE /api/tasks/:id – Delete task
+---
 
-Discussions
+6) Optional: seed demo data
 
-GET /api/discussions?projectId=ID – Get project messages
+If the backend contains a seed script:
 
-POST /api/discussions – Create message
+`cd backend`
+`npm run seed`
 
-Notifications
+(This will create 1 demo user, 1 project, a couple of tasks, and a sample discussion.)
 
-GET /api/notifications – Get unread notifications
 
-PUT /api/notifications/:id/read – Mark read
+---
 
-PUT /api/notifications/read-all – Mark all read
+7) Notes & troubleshooting
 
-Profile
+CORS: Ensure backend allows requests from http://localhost:3000.
 
-GET /api/profile – Get user info
+DB: If using MongoDB locally, ensure Mongo server is running or use a cloud Mongo URI in DATABASE_URL.
 
-PUT /api/profile – Update user info
+JWT_SECRET: Use a secure random string for JWT_SECRET.
 
-DELETE /api/profile – Delete account
-
-⚡ Running Both Frontend & Backend
-
-Start MongoDB
-
-Run backend: cd backend && npm run dev
-
-Run frontend: cd frontend && pnpm dev
-
-Open browser at http://localhost:3000
+#### Built by Team Twostepoverified
